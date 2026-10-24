@@ -1,0 +1,17 @@
+# Merge this site block with existing sites; do not overwrite a running Caddyfile.
+# Replace mcp.example.com with your actual domain.
+mcp.example.com {
+    handle /mcp* {
+        reverse_proxy 127.0.0.1:8767
+    }
+    @capture_routes path /capture /avatar_set/*
+    handle @capture_routes {
+        reverse_proxy 127.0.0.1:8766
+    }
+    handle / {
+        reverse_proxy 127.0.0.1:8765
+    }
+    handle {
+        respond "Not found" 404
+    }
+}
