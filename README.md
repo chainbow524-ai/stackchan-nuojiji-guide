@@ -2,6 +2,8 @@
 
 教程整理与实测：**浅默** · 初稿日期：2026年10月24日
 
+AI协作：**ChatGPT / Codex**（教程编写、代码修改与排错协助）。
+
 让桌上的 StackChan 小机器人接入糯叽机：角色能拍照看东西、在屏幕上显示文字、切换冷脸表情，以及在连接成功后自动眨眼。
 
 本教程由个人操作记录整理，AI 编程助手协助编写和排错，是基于上游项目的使用与修改教程，不是 M5Stack、糯叽机或上游作者的官方说明。
@@ -68,7 +70,7 @@
 
 正式公开前的待办见[发布前检查](RELEASE-CHECKLIST.md)。
 
-本稿提供Markdown教程、示例配置、辅助脚本，以及已在现有设备更新并实测的公开应用固件 **v2.2.6-qianmo.1**。应用内版本仍为2.2.6。固件文件位于仓库 `firmware/xiaozhi-public.bin`，详情见[公开固件说明](docs/public-firmware.md)。对应源码包及校验清单须与固件一起上传到本仓库的GitHub Releases；对应源码及校验清单将随本版发布于[GitHub Releases](https://github.com/chainbow524-ai/stackchan-nuojiji-guide/releases)。
+本稿提供Markdown教程、示例配置、辅助脚本，以及已在现有设备更新并实测的公开应用固件 **v2.2.6-qianmo.1**。应用内版本仍为2.2.6。固件文件位于仓库 `firmware/xiaozhi-public.bin`，详情见[公开固件说明](docs/public-firmware.md)。对应源码、固件、说明、许可及校验清单已发布于[本版下载页](https://github.com/chainbow524-ai/stackchan-nuojiji-guide/releases/tag/v2.2.6-qianmo.1)。GitHub自动生成的Source code压缩包仅包含教程仓库；固件完整源码请下载约343MB的 `stackchan-public-v2.2.6-qianmo.1-source.tar.gz`。
 
 公开版使用14帧几何表情，不包含浅默个人冷脸素材。已验证连接网关、自动眨眼、happy/idle切换、字幕、拍照预览和图片回传。眨眼仍由VPS连接后开启；网关字幕工具需另按教程添加。
 
@@ -81,3 +83,7 @@
 署名：**浅默**。教程允许非商业性免费分享、修改和公开发布二改版本，须保留署名及原仓库链接；不强制列出修改内容，也不要求二改采用相同许可。未经另行授权不得商业使用。
 
 详见 [教程使用许可](LICENSE-DOCS.md)、[许可适用范围](LICENSE)及[来源与致谢](CREDITS.md)。本教程的规则不覆盖第三方代码、固件、图片或素材已有的许可。
+
+### 附件文件名提示
+
+GitHub将说明附件的中文文件名转换为 `README-.md`，它对应SHA256SUMS.txt中的 `README-固件说明.md`，内容与哈希未改变。若用整份清单自动校验，请先把下载的说明文件改回 `README-固件说明.md`；固件及源码包的文件名保持原样。
