@@ -1,0 +1,18 @@
+# Personal runtime data does not belong in a public tutorial repository.
+.env
+.env.*
+!.env.example
+*.bin
+*.elf
+*.map
+*.zip
+*.log
+*.pem
+*.key
+captures/
+backups/
+node_modules/
+.venv/
+__pycache__/
+.DS_Store
+Thumbs.db
