@@ -6,7 +6,7 @@
 
 ## 1. 为什么冷脸会盖住文字和预览
 
-个人自定义头像 `avatar_img_` 是全屏LVGL对象，显示表情时会提到前景。原有字幕条和拍照预览仍然存在，但可能被盖住。个人源码中三个对象挂在同一screen，显示字幕或预览时把对应对象再提到前景即可。
+个人自定义头像 `avatar_img_` 是全屏LVGL对象，显示表情时会提到前景。原有字幕条和拍照预览仍然存在，但可能被盖住。这些对象挂在同一screen。仅在字幕或预览出现时置顶还不够：眨眼、换表情和恢复冷脸都会重新渲染头像，必须在每次头像重绘后恢复预览与字幕层级。
 
 这不是所有版本都相同的对象结构。本章以个人2.2.6源码为参照，修改前核对函数和对象，不全局替换所有 `move_foreground`。
 
@@ -136,48 +136,54 @@ git submodule update --init --recursive
 
 优先使用父仓库记录的子模块提交。历史救急曾单独克隆组件，但那样不能精确锁定原提交，不作为可复现的标准安装方式。
 
-## 4. 修改显示层级
+## 4. 修复每次重绘的层级，并设置独立计时
 
-**位置：VPS终端，先进入实际源码的firmware目录。**
+2026-11-08在个人冷脸固件上复现：关闭眨眼后字幕持续显示，重新开启眨眼时字幕被盖住。同时，set_avatar(happy)会保持当前表情，眨眼完成后回到happy，不会自动回idle。
+
+本次补丁修改lcd_display.h、lcd_display.cc和stackchan.cc，共实现：
+
+- 头像每次重绘后恢复层级：头像在下、可见预览在中、可见字幕在上；不会把已经隐藏的控件重新显示。
+- 每次成功切换到非idle表情后，独立计时5秒再恢复idle；眨眼不会重置该计时，新表情会重新计时。触摸表情也使用同一个5秒计时，避免旧的3秒触摸计时器提前清掉新表情。
+- assistant字幕独立显示8秒，新字幕从头计时；普通空状态消息和待命清理不会提前结束它。非空系统提示仍可替换字幕。
+- 关闭头像时取消表情自动恢复；不改变原眨眼开关状态，idle到期恢复不会擅自打开已关闭的眨眼。
+- 保留私人或公开头像素材，保留相机、网关配置及其他功能。拍照预览仍为原有大小和约5秒时长。
+
+公开几何版qianmo.2和私人版已在设备验证临时表情约5秒后恢复待机。另加以下眨眼修复，避免idle专用完整眨眼帧中途替换临时表情；详细分阶段实测范围见[固件说明](public-firmware.md)。旧qianmo.1不包含本次修复。
+
+### 4.1 应用前检查
+
+使用仓库scripts/fix-display-timing.py；源码应为本教程2.2.6结构，且不是微信聊天气泡UI模式。脚本不适用于任意上游版本，遇到结构不符会停止，不强行替换。
+
+**位置：VPS终端。将脚本上传到自己的主目录，将下面源码路径替换为实际路径。**
 
 ```bash
-cd ~/stackchan-source/firmware
+python3 ~/fix-display-timing.py --source /你的固件源码目录 --dry-run
 ```
 
-把下面整段复制运行。它会核对锚点、保留换行格式、备份源码，已加过的修改会跳过；锚点不符合预期时不会写入。
+应显示CHECK PASSED，且没有修改文件。已应用过补丁时脚本会拒绝重复应用。
+
+### 4.2 备份并修改
 
 ```bash
-python3 - <<'PY'
-from pathlib import Path
-from datetime import datetime
-import shutil
-p = Path('main/display/lcd_display.cc')
-before = p.read_bytes()
-after = before
-newline = b'\r\n' if b'\r\n' in before else b'\n'
-changes = [
-    (b'            lv_obj_remove_flag(bottom_bar_, LV_OBJ_FLAG_HIDDEN);',
-     b'            lv_obj_move_foreground(bottom_bar_);'),
-    (b'    lv_obj_remove_flag(preview_image_, LV_OBJ_FLAG_HIDDEN);',
-     b'    lv_obj_move_foreground(preview_image_);'),
-]
-for anchor, added in changes:
-    if added.strip() in after:
-        print('已有：', added.strip().decode())
-        continue
-    if after.count(anchor) != 1:
-        raise SystemExit('源码锚点不唯一或不存在，未写入。请核对当前版本。')
-    after = after.replace(anchor, anchor + newline + added, 1)
-if after == before:
-    raise SystemExit('两项修复都已存在，无需重复修改。')
-backup = p.with_name(p.name + '.before-display-' + datetime.now().strftime('%Y%m%d-%H%M%S'))
-shutil.copy2(p, backup)
-p.write_bytes(after)
-print('源码修改完成，尚未编译或刷机。备份：', backup)
-PY
+python3 ~/fix-display-timing.py --source /你的固件源码目录
 ```
 
-期望结果是：有文字时显示并提起字幕条；显示预览时提起预览图。没有修改预览大小和时间；参考源码的预览时长为约5秒，预览结束隐藏后露出头像。
+脚本在~/stackchan-display-backup/带日期目录中备份三个原文件及哈希，再修改源码；头像文件只核对哈希，不改写。记录输出的备份位置。脚本不会编译、刷机或重启网关。
+
+继续按下一节做增量编译。只修改VPS字幕发送代码或人设，无法修复固件中每次眨眼的层级覆盖。
+
+### 4.3 公开几何版：临时表情期间暂停眨眼
+
+qianmo.2成品及对应源码已经包含此修复，直接使用时无需重复打补丁。维护11月8日公开构建源码的人可使用scripts/fix-public-idle-blink.py；该脚本严格核对旧源码哈希和几何素材，不适用于任意版本或私人头像构建。
+
+将脚本上传到VPS主目录后，先检查再应用：
+
+```bash
+python3 ~/fix-public-idle-blink.py --source /你的公开固件源码目录 --dry-run
+python3 ~/fix-public-idle-blink.py --source /你的公开固件源码目录
+```
+
+它只修改stackchan.cc并先备份；临时表情期间跳过自动眨眼，约5秒恢复idle后继续原眨眼设置。字幕仍独立8秒。脚本不会编译、刷机或重启服务。若提示Already patched，说明已有标记；若源码不匹配则停止，不要删除校验强行应用。
 
 ## 5. 安装Docker并编译
 
@@ -282,6 +288,10 @@ esptool --chip esp32s3 --port COM3 --baud 460800 write-flash 0x20000 'C:\实际�
 3. `take_photo`能返回图片，预览短暂出现后隐藏。
 4. 原来的相机与其他已用功能仍可运行。
 
-同轮切换表情再显示字幕时，先 `set_avatar`，后 `show_text`；换脸仍可能重新提起头像。拍照预览是短暂预览，不把这一行修改说成实时视频流或永久全屏。
+修复后可同时使用表情和字幕，两者独立计时；表情恢复idle、眨眼和重绘均不应遮住仍在显示的字幕。旧固件仍可能遮挡，不能只改人设就当作修复完成。拍照预览是短暂预览，不把这一行修改说成实时视频流或永久全屏。
 
 撤销源码修改时先核对那份备份之后有没有其他改动，再恢复并重新编译。VPS字幕扩展则只恢复相关Python文件并重启网关；不要拿过旧备份覆盖后来新加的功能。
+
+### 修复后组合测试
+
+保持眨眼开启，依次调用set_avatar(face="happy")、show_text(text="表情五秒恢复，字幕八秒消失")，之后不再调用idle或其他显示工具。应看到happy从出现时约5秒后恢复idle，字幕从出现时约8秒后隐藏；临时表情期间不眨眼；恢复idle后继续眨眼，且不遮挡文字。再测试接近到期时发送新字幕、新表情是否重新计时，以及off是否保持隐藏。

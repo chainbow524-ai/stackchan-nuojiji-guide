@@ -1,70 +1,87 @@
-# 公开固件 v2.2.6-qianmo.1
+# 公开应用更新固件 v2.2.6-qianmo.2
 
-整理：浅默。应用内版本仍显示2.2.6；qianmo.1区分本次公开包，不代表上游新增版本。整理日期：2026-10-25。
+整理与实测：浅默。AI协作：ChatGPT / Codex（教程、代码修改与排错协助）。
+应用内版本仍显示2.2.6，qianmo.2是本次公开包的区分标识。整理日期：2026-11-12。
 
-## 适用范围
+## 使用前先确认
 
-实测硬件：M5Stack官方StackChan/CoreS3，ESP32-S3、16MB Flash、8MB Quad PSRAM、GC0308相机。
+适用硬件：本教程的官方StackChan/CoreS3，ESP32-S3、16MB Flash、8MB Quad PSRAM、GC0308。
+本文件xiaozhi-public.bin是应用更新文件，不是全新设备首次刷入的完整镜像。必须已有匹配的引导程序、分区及资源文件，并确认当前活动应用槽。
 
-本包提供应用更新文件xiaozhi-public.bin，不是首次安装所需的完整整片镜像。仅适用于已有匹配引导程序、分区和资源文件的设备。不要写到0x0。其他型号及全新设备首次安装未实测。
+实测分区：ota_0从0x20000开始、容量0x3f0000；ota_1从0x410000开始、容量0x3f0000；资源区从0x800000开始。不同设备或启动槽不能直接照抄地址。不要将应用文件写到0x0。
 
-实测设备ota_0起点0x20000、容量0x3f0000；ota_1起点0x410000、容量0x3f0000；资源区起点0x800000。须确认当前活动启动槽，不能仅凭“都是CoreS3”照搬地址。
+## 这次更新了什么
 
-## 内容与改动
+- 每次头像重绘后恢复显示顺序：头像在下，可见拍照预览在中，可见字幕在上。眨眼、换脸和恢复idle不会再把仍可见的字幕盖住。
+- 非idle表情显示约5秒后自动恢复idle，新表情重新计时；眨眼不重置这个计时。关闭头像off会取消自动恢复。
+- assistant字幕独立显示约8秒，新字幕重新计时；空状态消息及待命清理不提前结束该字幕，非空系统提示仍可替换它。
+- 触摸表情也使用相同的5秒计时，取消旧的额外3秒恢复调用。
+- 临时表情显示期间跳过自动眨眼，取消已开始的眨眼步骤，避免完整眨眼帧短暂替换表情；约5秒后恢复idle并按原设置继续眨眼。
+- 保留原眨眼开关设置。恢复idle不代表强制打开已关闭的眨眼；连接后自动开启仍由VPS网关配置。
+- 保留14帧公开几何表情，不包含私人冷脸。默认网关地址、备用地址和令牌仍为空，不强制覆盖使用者配置。
+- 拍照预览仍保留原来的大小和约5秒时长；show_text仍属于VPS网关工具，固件不会代替网关注册工具。
 
-- 字幕bottom_bar_及拍照预览preview_image_显示时提到前景，保留原有预览大小和时长。
-- 使用14帧程序绘制的几何表情，包含六种表情、眼睛和嘴形帧，不包含浅默私人冷脸素材。
-- 默认网关地址、备用地址及令牌为空，不强制覆盖设备已有网关配置。读者须配置自己的Wi-Fi、网关和令牌。
-- 眨眼启动逻辑保持原样，本次实测由VPS网关连接后开启。仅刷此固件不代表断网开机就会眨眼。
-- show_text属于VPS网关工具，固件显示修复不能代替网关添加字幕工具的步骤。
+计时由固件管理，不要求聊天AI等待5秒或8秒，也不需要结束后反复调用idle、show_text或say。
 
-## 实测结果
+## 校验值
 
-2026-10-24浅默在现有设备更新应用后确认：连接网关、自动眨眼、happy/idle表情切换、字幕显示、拍照预览、take_photo图片回传及聊天模型识图成功；触摸后出现脸红反应。
+xiaozhi-public.bin：3630960字节
 
-未逐一测试全部六种表情、所有嘴形、运动参数或断线恢复场景。本次曾发生WebSocket心跳超时断线，重启设备后恢复ready并通过调用；未确定根因，不宣称已修复所有连接问题。
+SHA-256：
 
-完整新装、所有硬件与网络组合尚未实测。现有VPS的字幕与自动眨眼补丁不是应用固件的一部分，须按教程另行配置。
+28c9c2289d06b8b1264a2c03e04845a32f8086da76af8db1e406678241b8739b
 
-## 校验与更新
+公开版使用几何表情；包含私人头像的其他固件不能替代它发布。
 
-应用文件3630304字节，SHA-256：
+## 备份和应用更新
 
-d4afc04337a846f4c47771992208355a93fc441a5207a8bc36fe6f175e137462
+在Windows PowerShell操作，COM3仅为本次设备串口。先关闭占用串口的程序，确认硬件、活动槽和分区，完成备份并校验大小。备份含私人设置，不公开。
 
-先确认硬件、分区、活动槽及备份。COM3只是本次实测串口，其他电脑须替换。在Windows PowerShell、固件所在目录中操作。
-
-先备份；完整备份可能含Wi-Fi和令牌，不能上传。本次esptool 5.3.1默认读取在固定位置中断，改用--no-stub后成功读取16MB。该方式较慢，不表示所有设备都需要：
+本次历史环境esptool 5.3.1默认读取曾在固定位置中断，用--no-stub完成16MB备份，耗时约37分钟。不是所有设备都需要此选项：
 
     python -m esptool --chip esp32s3 --port COM3 --baud 115200 --no-stub read-flash --flash-size 16MB 0x0 0x1000000 "cores3-private-backup.bin"
 
-确认备份成功且大小16777216字节。仅当活动槽确认为0x20000且分区匹配时：
+在本附件所在目录，确认当前活动槽为0x20000且分区匹配后：
 
     Get-FileHash -LiteralPath ".\xiaozhi-public.bin" -Algorithm SHA256
     python -m esptool --chip esp32s3 --port COM3 --baud 460800 write-flash 0x20000 ".\xiaozhi-public.bin"
 
-应出现Hash of data verified。保持原Wi-Fi/热点开启，重启时不触摸屏幕。只写应用不主动擦除NVS；这也是本次保留旧连接配置的原因，不代表固件内含个人配置。需要恢复外观时，用保留的个人应用更新同一已确认槽位，不用其他人的整片备份恢复。
+应显示Hash of data verified。保持原Wi-Fi/热点开启，重启时暂时不碰屏幕。仅写应用不会主动擦除设置区，可继续使用自己的原网络和网关配置。
 
-## 源码、构建与许可
+## 功能测试与边界
 
-来源：[kisaragi-mochi/stackchan-mcp](https://github.com/kisaragi-mochi/stackchan-mcp)的firmware源码快照，PROJECT_VER 2.2.6。历史父提交号未记录，不声称对应某个精确上游tag。
+- 2026-11-12公开几何版已在现有设备刷入并通过happy表情测试：显示期间不被眨眼打断，约5秒后恢复idle并继续眨眼。私人冷脸版随后同步修复、刷入并验证；私人文件不随本包公开。
+- 本次显示计时版本在增加“临时表情暂停眨眼”前，已验证happy约5秒恢复、字幕独立约8秒消失且不被眨眼和换脸遮挡。最后一次眨眼补丁只改变板级眨眼条件；最终二进制没有再次完整重测所有相机、字幕和其他功能。
+- 此前qianmo.1已验证连接、字幕、拍照预览和图片回传；不把历史测试等同于本版每项都重新测试。
+- 同轮两工具调用曾出现设备已执行、客户端工具卡片长时间等待并报网络错误；单独调用字幕和表情可正常返回。并发结果或网络根因未确定，本包不宣称修复客户端或网关通信问题。
+- 个人设备无触摸时曾自行摇头，关闭摸头感应后停止。该现象与本次显示修复分开记录，不声称为所有设备的共同故障，也没有修改舵机控制或触摸阈值。
+- 全新设备首次安装、所有硬件和网络组合、全部六种表情及嘴形未逐一验证。不宣称解决此前所有WebSocket心跳超时。
+- 8秒字幕功能针对本教程的非微信气泡UI、StackChan板型。其他源码结构应先核对，不盲目套补丁。
 
-同附stackchan-public-v2.2.6-qianmo.1-source.tar.gz包含本次实际构建源码、sdkconfig、dependencies.lock、components与managed_components，保留许可证。剔除旧失败构建日志和临时产物，未改变本次构建代码、素材或配置；添加发布说明、几何头像许可及文件哈希清单。
+## 完整对应源码及构建
 
-解压进入firmware目录，用Docker espressif/idf:v5.5.2运行上游脚本：
+附件stackchan-public-v2.2.6-qianmo.2-source.tar.gz包含完整固件源码、实际sdkconfig、dependencies.lock、components、managed_components与各自许可。
+11503个构建输入文件以11月8日VPS核对过的公开源码快照为基础，应用本次眨眼补丁；修改后的stackchan.cc与VPS编译前核对的SHA-256一致。另附发布说明、素材许可和文件哈希清单。省去旧失败构建和临时文件，不删减构建所需依赖。
+
+来源：kisaragi-mochi/stackchan-mcp的firmware 2.2.6源码快照。历史父提交号未记录，不能据此推断某个上游tag。构建使用espressif/idf:v5.5.2，未承诺字节级重现。
+
+在完整源码的firmware目录中，用Docker运行：
 
     docker run --rm --cpus=1 --memory=1400m --memory-swap=2800m --ulimit nofile=65536:65536 -e CMAKE_BUILD_PARALLEL_LEVEL=1 -v "$PWD":/project -w /project espressif/idf:v5.5.2 python ./scripts/release.py stackchan
 
-镜像按版本tag记录，未保留本次digest，不承诺字节级重现。脚本可能生成merged-binary.bin；本次未验证其初次安装，不将它作为已测试成品发布。
+已有本教程正确板型构建缓存时，本次增量命令为：
 
-各上游与依赖保留原许可证。原SCServo_lib文件仍随源码保存，并保留其GPL文本；本次CONFIG_STACKCHAN_SERVO_FEETECH=y对应CMake分支排除SCS.cc、SCSCL.cc、SCSerial.cc，使用components/feetech_scs（MIT）驱动。不据此把全部依赖统一标作MIT。
+    idf.py -DBOARD_NAME=stackchan -DBOARD_TYPE=stackchan build
 
-新几何头像按LICENSE-GEOMETRIC-AVATAR-MIT.txt授权。教程非商业规则不覆盖这些软件、固件和素材原有的授权。发布应用时同时提供本包对应源码和许可；大源码包应作为GitHub Release附件提供，而不是省略。
+该命令应在上述IDF Docker环境内运行，不是Windows直接运行。完整镜像merged-binary.bin的首次安装没有在本次验证，不作为本包已测试成品提供。
 
-## 核查范围
+GitHub自动生成的Source code(zip/tar.gz)只打包教程仓库，不能代替本附件的完整固件源码。
 
-实际构建配置中的默认WebSocket地址和令牌为空。已扫描成品与源码中的已知个人部署标记及常见密钥形式，未发现匹配；对照14帧私人冷脸像素，公开应用中未发现相同完整帧；公开头像像素已在应用中找到。此检查与源码隔离构建共同用于核查，不把一次字符串扫描称为绝对无泄露证明。
+## 许可
 
+上游和依赖保留原许可。新几何素材按LICENSE-GEOMETRIC-AVATAR-MIT.txt授权，教程非商业规则不覆盖它和既有软件的许可证。
+本次仍选择CONFIG_STACKCHAN_SERVO_FEETECH=y，保留原SCServo_lib源码及其GPL文本，并使用对应的Feetech驱动构建分支。不能将所有第三方依赖统一声明为MIT。
+发布时应用与完整对应源码共同提供，并保留许可与通知。只核查配置与文件不能代替实际功能测试。
 
 
 [返回首页](../README.md)

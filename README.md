@@ -10,6 +10,10 @@ AI协作：**ChatGPT / Codex**（教程编写、代码修改与排错协助）�
 
 **先看这一条：目前已经实测 `take_photo` 直接把图片返回给糯叽机，支持看图的聊天模型可以据此回答。不必为主路线另买一个识图 API。** 原来的“拍照＋外部模型识图”保留为可选备用。
 
+## 2026-11-12 更新：表情和字幕独立计时
+
+公开几何版v2.2.6-qianmo.2已完成编译和设备表情测试：临时表情保持约5秒，期间暂停眨眼，随后恢复待机眨眼。字幕独立约8秒；换脸和眨眼重绘时保持可见字幕在最上层。详细实测范围见[公开固件说明](docs/public-firmware.md)。旧qianmo.1不包含这些修复。
+
 ## 能实现什么
 
 | 功能 | 使用方式 | 本次验证范围 |
@@ -18,7 +22,7 @@ AI协作：**ChatGPT / Codex**（教程编写、代码修改与排错协助）�
 | 屏幕字幕 | `show_text(text)` | 原有自定义冷脸保留，字幕显示在其上方；个人修改版已验证 |
 | 拍照预览 | 拍照时由固件显示 | 预览显示时提到前景，保留原有大小及约5秒时长；个人修改版已验证 |
 | 六种表情 | `set_avatar(face)` | 参数为 idle、happy、thinking、sad、surprised、embarrassed；具体效果取决于所装素材 |
-| 自动眨眼 | `set_blink(enabled)` | 开启后随机约3～6秒眨眼；网关恢复默认头像后自动开启已验证 |
+| 自动眨眼 | `set_blink(enabled)` | 待机时随机约3～6秒眨眼；qianmo.2在临时表情期间暂停，恢复待机后继续 |
 | 头部动作和亮度 | 对应 MCP 工具 | 工具在本版本中存在，本文不把所有动作与范围都标为已实测 |
 | 可选外部识图 | `take_photo_and_analyze(question)` | 一次调用内部完成新拍照与外部识图，返回文字；旧方案已验证，本仓库独立版待VPS复测 |
 
@@ -62,17 +66,17 @@ AI协作：**ChatGPT / Codex**（教程编写、代码修改与排错协助）�
 
 同样显示2.2.6的两份固件，也可能包含不同提交、不同配置和素材。下载源码时请记录所用版本和子模块版本，方便以后更新、复现及排错。
 
-依据是2026年10月9日至24日的个人部署和实测记录。新用户完整部署、各云厂商控制台界面、所有型号与网络环境尚未逐一验证。请以当前步骤的检查结果为准；遇到未预期输出就先停下，不跨过失败继续运行。
+依据是2026年10月至11月12日的个人部署和实测记录。新用户完整部署、各云厂商控制台界面、所有型号与网络环境尚未逐一验证。请以当前步骤的检查结果为准；遇到未预期输出就先停下，不跨过失败继续运行。
 
 ## 配套内容和发布状态
 
 教程原仓库：[https://github.com/chainbow524-ai/stackchan-nuojiji-guide](https://github.com/chainbow524-ai/stackchan-nuojiji-guide)。作者：**浅默**。本版按个人实测范围公开整理，完整新装流程尚未端到端验证。
 
-正式公开前的待办见[发布前检查](RELEASE-CHECKLIST.md)。
+更新范围与发布核对见[发布前检查](RELEASE-CHECKLIST.md)。
 
-本稿提供Markdown教程、示例配置、辅助脚本，以及已在现有设备更新并实测的公开应用固件 **v2.2.6-qianmo.1**。应用内版本仍为2.2.6。固件文件位于仓库 `firmware/xiaozhi-public.bin`，详情见[公开固件说明](docs/public-firmware.md)。对应源码、固件、说明、许可及校验清单已发布于[本版下载页](https://github.com/chainbow524-ai/stackchan-nuojiji-guide/releases/tag/v2.2.6-qianmo.1)。GitHub自动生成的Source code压缩包仅包含教程仓库；固件完整源码请下载约343MB的 `stackchan-public-v2.2.6-qianmo.1-source.tar.gz`。
+本稿提供Markdown教程、示例配置、辅助脚本，以及已在现有设备更新并实测的公开应用固件 **v2.2.6-qianmo.2**。应用内版本仍为2.2.6。固件文件位于仓库 `firmware/xiaozhi-public.bin`，详情见[公开固件说明](docs/public-firmware.md)。对应源码、固件、说明、许可及校验清单已发布于[本版下载页](https://github.com/chainbow524-ai/stackchan-nuojiji-guide/releases/tag/v2.2.6-qianmo.2)。GitHub自动生成的Source code压缩包仅包含教程仓库；固件完整源码请下载约343MB的 `stackchan-public-v2.2.6-qianmo.2-source.tar.gz`。
 
-公开版使用14帧几何表情，不包含浅默个人冷脸素材。已验证连接网关、自动眨眼、happy/idle切换、字幕、拍照预览和图片回传。眨眼仍由VPS连接后开启；网关字幕工具需另按教程添加。
+公开版使用14帧几何表情，不包含浅默个人冷脸素材。本版已验证happy保持、自动恢复idle和眨眼不中断；字幕计时在本次眨眼小补丁前验证，拍照预览和图片回传为此前版本的实测，未将所有功能在最终文件上全部复测。眨眼仍由VPS连接后开启；网关字幕工具需另按教程添加。
 
 **本固件是应用更新文件，不是全新设备首次安装的整片镜像。** 更新前须确认匹配硬件、分区、资源文件及活动启动槽，并备份。全新环境部署和首次安装仍未端到端验证。
 
@@ -86,4 +90,4 @@ AI协作：**ChatGPT / Codex**（教程编写、代码修改与排错协助）�
 
 ### 附件文件名提示
 
-GitHub将说明附件的中文文件名转换为 `README-.md`，它对应SHA256SUMS.txt中的 `README-固件说明.md`，内容与哈希未改变。若用整份清单自动校验，请先把下载的说明文件改回 `README-固件说明.md`；固件及源码包的文件名保持原样。
+qianmo.2使用ASCII说明文件名`README-FIRMWARE.md`，可按SHA256SUMS.txt直接校验。旧qianmo.1的GitHub附件`README-.md`对应旧清单中的`README-固件说明.md`；只在核对旧版时需要改名。
